@@ -1,0 +1,16 @@
+node_modules/
+artifacts
+cache
+.env
+.vscode
+
+*__pycache__
+logs
+
+
+coverage
+coverage.json
+typechain
+typechain-types
+
+deployments
