@@ -4,7 +4,6 @@ import { HardhatUserConfig, task } from "hardhat/config";
 // This adds support for typescript paths mappings
 // import "tsconfig-paths/register";
 
-import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
@@ -15,6 +14,8 @@ import "hardhat-gas-reporter";
 import "@typechain/hardhat";
 import "solidity-coverage";
 require("hardhat-tracer");
+require("@nomiclabs/hardhat-etherscan");
+
 dotenv.config();
 
 import * as tdly from "@tenderly/hardhat-tenderly";
@@ -69,6 +70,11 @@ const config: HardhatUserConfig = {
       url: process.env.SEPOLIA_NODE_URL || "https://rpc.sepolia.io",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    base_sepolia: {
+      chainId: 84532,
+      url: process.env.BASE_SEPOLIA_NODE_URL || "https://sepolia.base.org",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
     maticmum: {
       url: process.env.MUMBAI_NODE_URL || "https://rpc-mumbai.matic.today",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
@@ -88,9 +94,20 @@ const config: HardhatUserConfig = {
     timeout: 0,
   },
   etherscan: {
-    // Your API key for Etherscan/Polygonscan
-    // Obtain one at https://etherscan.io/, https://polygonscan.com/
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      // ... (keep existing apiKeys if any)
+      base_sepolia: process.env.BASE_SCAN_API_KEY || '' // Add this line
+    },
+    customChains: [
+      {
+        network: "base_sepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org"
+        }
+      }
+    ]
   },
   contractSizer: {
     alphaSort: true,
@@ -100,7 +117,7 @@ const config: HardhatUserConfig = {
   tenderly: {
     username: process.env.TENDERLY_USERNAME, 
     project: process.env.TENDERLY_PROJECT,
-    forkNetwork: process.env.TENDERLY_NETWORK_ID, 
+    forkNetwork: process.env.TENDERLY_NETWORK_ID,
     privateVerification: false,
   },
   plugins: ["solidity-coverage"],

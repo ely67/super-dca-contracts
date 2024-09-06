@@ -164,7 +164,7 @@ describe('SuperDCAPoolV1', () => {
       token: ETHx,
       IDAIndex: 0,
     }
-
+    
     // Impersonate Superfluid Governance and make a registration key
     const registrationKey = await sfRegistrationKey(sf, adminSigner.address)
 
