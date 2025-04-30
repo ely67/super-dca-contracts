@@ -82,6 +82,14 @@ jobs:
 
   # Disable until the `external` directory is removed.
   #
+  lint:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v3
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+    - name: Check formatting
+      run: forge fmt --check
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:
@@ -105,3 +113,4 @@ jobs:
   #       run: |
   #         scopelint --version
   #         scopelint check
+  #         forge fmt --check

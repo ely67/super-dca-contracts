@@ -18,16 +18,18 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/interfaces/AggregatorV3Interface.sol";
-
-import "./external/uniswap/ISwapRouter02.sol";
-import "./external/gelato/AutomateTaskCreator.sol";
-import "./external/superfluid/ISETHCustom.sol";
-import "./external/weth/IWETH.sol";
+import {AutomateTaskCreator} from "@gelato/contracts/integrations/AutomateTaskCreator.sol";
+import {IWETH} from "../contracts/interface/IWETH.sol";
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "./SuperDCATrade.sol";
+import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/tokens/ISETH.sol";
+import {ModuleData, Module} from "@gelato/contracts/integrations/Types.sol";
+//import {LibDataTypes} from "@gelato/contracts/libraries/LibDataTypes.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
   using SafeERC20 for ERC20;
-  using Counters for Counters.Counter;
+  // using Counters for Counters.Counter;
 
   ////////////////////////////////////////
   // Structures
@@ -42,14 +44,14 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     ISuperToken wethx;
     ISuperToken inputToken;
     ISuperToken outputToken;
-    ISwapRouter02 router;
+    ISwapRouter router;
     IUniswapV3Factory uniswapFactory;
     address[] uniswapPath;
     uint24[] poolFees;
     AggregatorV3Interface priceFeed;
     bool invertPrice;
     string registrationKey;
-    address payable ops;
+    address payable automate;
   }
 
   /// @notice Parameters needed to perform a shareholder update (i.e. a flow rate update)
@@ -83,7 +85,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     // outputToken pool
 
   // Uniswap Variables
-  ISwapRouter02 public router; // UniswapV3 Router
+  ISwapRouter public router; // UniswapV3 Router
   address[] public uniswapPath; // The path between inputToken and outputToken
   uint24[] public poolFees; // The pool fee to use in the path between inputToken and outputToken
   uint24 public constant GELATO_GAS_POOL_FEE = 500; // The pool fee to use for gas reimbursements to
@@ -164,7 +166,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
       host.registerApp(_configWord);
     }
 
-    _createTask();
+    _createGelatoTask();
     _initializeWETH(params.weth, params.wethx);
     _initializePool(params.inputToken, params.outputToken);
     _initializeUniswap(params.router, params.uniswapFactory, params.uniswapPath, params.poolFees);
@@ -172,13 +174,14 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
   }
 
   /// @dev Creates the distribute task on Gelato Network
-  function _createTask() internal {
+  function _createGelatoTask() internal {
     // Create a timed interval task with Gelato Network
     bytes memory execData = abi.encodeCall(this.distribute, ("", false));
     ModuleData memory moduleData = ModuleData({modules: new Module[](2), args: new bytes[](2)});
     moduleData.modules[0] = Module.PROXY;
     moduleData.modules[1] = Module.TRIGGER;
     moduleData.args[0] = _proxyModuleArg();
+    // solhint-disable-next-line not-rely-on-time
     moduleData.args[1] = _timeTriggerModuleArg(uint128(block.timestamp), uint128(60_000));
     taskId = _createTask(address(this), execData, moduleData, ETH);
   }
@@ -197,6 +200,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
   function _initializePool(ISuperToken _inputToken, ISuperToken _outputToken) internal {
     inputToken = _inputToken;
     outputToken = _outputToken;
+    // solhint-disable-next-line not-rely-on-time
     lastDistributedAt = block.timestamp;
     underlyingOutputToken = _getUnderlyingToken(outputToken);
     underlyingInputToken = _getUnderlyingToken(inputToken);
@@ -217,7 +221,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
   /// @param _uniswapPath is the Uniswap V3 path
   /// @param _poolFees is the Uniswap V3 pool fees
   function _initializeUniswap(
-    ISwapRouter02 _uniswapRouter,
+    ISwapRouter _uniswapRouter,
     IUniswapV3Factory _uniswapFactory,
     address[] memory _uniswapPath,
     uint24[] memory _poolFees
@@ -300,6 +304,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     emit UpdateGelatoFeeShare(gelatoFeeShare);
 
     // Record when the last distribution happened for other calculations
+    // solhint-disable-next-line not-rely-on-time
     lastDistributedAt = block.timestamp;
 
     // Compute the maximum inputToken amount that can be used for the fee
@@ -352,7 +357,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     if (underlyingInputToken != address(inputToken) && underlyingInputToken != address(weth)) {
       inputToken.downgrade(amount);
     } else if (underlyingInputToken == address(weth)) {
-      ISETHCustom(address(inputToken)).downgradeToETH(amount);
+      ISETH(address(inputToken)).downgradeToETH(amount);
       weth.deposit{value: address(this).balance}();
     }
     return ERC20(underlyingInputToken).balanceOf(address(this));
@@ -365,9 +370,11 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     // We already have WETH for gas
     if (underlyingInputToken == address(weth)) return amountOut;
 
-    ISwapRouter02.ExactOutputParams memory params = ISwapRouter02.ExactOutputParams({
+    ISwapRouter.ExactOutputParams memory params = ISwapRouter.ExactOutputParams({
       path: encodedGasPath,
       recipient: address(this),
+      // solhint-disable-next-line not-rely-on-time
+      deadline: block.timestamp + 300,
       amountOut: amountOut,
       amountInMaximum: amountInMaximum
     });
@@ -388,9 +395,11 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     latestPrice = uint256(int256(getLatestPrice()));
 
     // This is the code for the uniswap
-    ISwapRouter02.ExactInputParams memory params = ISwapRouter02.ExactInputParams({
+    ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
       path: encodedSwapPath,
       recipient: address(this),
+      // solhint-disable-next-line not-rely-on-time
+      deadline: block.timestamp + 300,
       amountIn: amount,
       // Disabled on this version since initial liquidity for SuperDCA liquidity Network is low
       // SuperDCA Swaps are very small by design, its unlikely frontrunning these swaps will be
@@ -404,7 +413,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     if (underlyingOutputToken != address(outputToken)) {
       if (outputToken == wethx) {
         weth.withdraw(ERC20(underlyingOutputToken).balanceOf(address(this)));
-        ISETHCustom(address(outputToken)).upgradeByETH{value: address(this).balance}();
+        ISETH(address(outputToken)).upgradeByETH{value: address(this).balance}();
       } else {
         outputToken.upgrade(
           ERC20(underlyingOutputToken).balanceOf(address(this))
@@ -764,6 +773,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
   ) internal view returns (uint256 _uninvestedAmount) {
     _uninvestedAmount = _flowRate
       * (
+        // solhint-disable-next-line not-rely-on-time
         block.timestamp
           - ((_prevUpdateTimestamp > _lastDistributedAt) ? _prevUpdateTimestamp : _lastDistributedAt)
       );
@@ -904,6 +914,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     view
     returns (uint256 _adjustedFeeShare)
   {
+    // solhint-disable-next-line not-rely-on-time
     uint256 _timeSinceLastDistribution = block.timestamp - lastDistributedAt;
 
     if (_timeSinceLastDistribution > distributionInterval) {
@@ -932,6 +943,11 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
   function stake(uint256 amount) external {
     if (amount <= currentStake) revert StakeTooLow();
 
+    // Update executor state
+    address previousExecutor = currentExecutor;
+    currentExecutor = msg.sender;
+    currentStake = amount;
+
     // Transfer new stake from caller
     ERC20(STAKING_TOKEN_ADDRESS).transferFrom(msg.sender, address(this), amount);
 
@@ -940,11 +956,6 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
       ERC20(STAKING_TOKEN_ADDRESS).transfer(currentExecutor, currentStake);
       emit StakeReturned(currentExecutor, currentStake);
     }
-
-    // Update executor state
-    address previousExecutor = currentExecutor;
-    currentExecutor = msg.sender;
-    currentStake = amount;
 
     emit NewExecutor(previousExecutor, currentExecutor, amount);
   }

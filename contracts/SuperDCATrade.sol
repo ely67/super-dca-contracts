@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SuperDCATrade is Ownable, ERC721 {
-  using Counters for Counters.Counter;
 
   struct Trade {
     uint256 tradeId;
@@ -19,7 +18,7 @@ contract SuperDCATrade is Ownable, ERC721 {
     uint256 refunded;
   }
 
-  uint256 private nextTradeId;
+  uint256 private _nextTradeId;
   mapping(uint256 => Trade) public trades;
   mapping(address => uint256[]) public tradesByUser;
   mapping(address => uint256) public tradeCountsByUser;
@@ -29,25 +28,13 @@ contract SuperDCATrade is Ownable, ERC721 {
 
   constructor() ERC721("SuperDCA Trade", "SDCA") {}
 
-  function getTradeInfo(address _trader, uint256 _tradeIndex)
-    external
-    view
-    returns (Trade memory trade)
-  {
-    trade = trades[tradesByUser[_trader][_tradeIndex]];
-  }
-
-  function getLatestTrade(address _trader) external view returns (Trade memory trade) {
-    trade = trades[tradesByUser[_trader][tradesByUser[_trader].length - 1]];
-  }
-
   function startTrade(address _shareholder, int96 _flowRate, uint256 _indexValue, uint256 _units)
     external
     onlyOwner
   {
     // Mint the shareholder an NFT to track this trade
-    uint256 tradeId = nextTradeId + 1;
-    nextTradeId += 1;
+    uint256 tradeId = _nextTradeId + 1;
+    _nextTradeId += 1;
 
     trades[tradeId] = Trade({
       tradeId: tradeId,
@@ -79,5 +66,15 @@ contract SuperDCATrade is Ownable, ERC721 {
     trade.refunded = _refunded;
 
     emit TradeEnded(_shareholder, trade.tradeId);
+  }
+
+  function getLatestTrade(address _trader) external view returns (Trade memory trade) {
+    require(tradesByUser[_trader].length - 1 > 0, "No trades");
+    trade = trades[tradesByUser[_trader][tradesByUser[_trader].length - 1]];
+  }
+
+  function getTradeInfo(address _trader, uint256 _index) external view returns (Trade memory trade) {
+    require(_index < tradesByUser[_trader].length, "Invalid trade index");
+    trade = trades[tradesByUser[_trader][_index]];
   }
 }
