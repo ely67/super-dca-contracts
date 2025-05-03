@@ -69,7 +69,7 @@ contract SuperDCATrade is Ownable, ERC721 {
   }
 
   function getLatestTrade(address _trader) external view returns (Trade memory trade) {
-    require(tradesByUser[_trader].length - 1 > 0, "No trades");
+    require(tradesByUser[_trader].length > 0, "No trades");
     trade = trades[tradesByUser[_trader][tradesByUser[_trader].length - 1]];
   }
 

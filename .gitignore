@@ -3,6 +3,7 @@ artifacts
 cache
 .env
 .vscode
+note.md
 
 *__pycache__
 logs
