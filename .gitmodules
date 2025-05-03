@@ -13,3 +13,9 @@
 [submodule "lib/protocol-monorepo"]
 	path = lib/protocol-monorepo
 	url = https://github.com/superfluid-finance/protocol-monorepo
+[submodule "lib/v3-periphery"]
+	path = lib/v3-periphery
+	url = https://github.com/Uniswap/v3-periphery
+[submodule "lib/ops"]
+	path = lib/ops
+	url = https://github.com/gelatodigital/ops

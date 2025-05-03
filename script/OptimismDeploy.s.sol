@@ -33,7 +33,7 @@ contract OptimismDeploy is BaseDeploySuperDCAPool {
       chainlinkUsdcUsd: 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3,
       chainlinkDaiUsd: 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6,
       // Gelato
-      gelatoOps: 0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0,
+      gelatoAutomate: 0x2A6C106ae13B558BB9E2Ec64Bd2f1f7BEFF3A5E0,
       gelatoNetwork: 0x01051113D81D7d6DA508462F2ad6d7fD96cF42Ef,
       gelatoFee: 0,
       // Deployment constants

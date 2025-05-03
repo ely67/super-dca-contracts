@@ -35,7 +35,7 @@ abstract contract BaseDeploySuperDCAPool is Script {
     address chainlinkUsdcUsd;
     address chainlinkDaiUsd;
     // Gelato
-    address gelatoOps;
+    address gelatoAutomate;
     address gelatoNetwork;
     uint256 gelatoFee;
     // Deployment constants
@@ -61,7 +61,7 @@ abstract contract BaseDeploySuperDCAPool is Script {
     NetworkConfiguration memory config = getConfiguration();
 
     // Deploy the pool
-    SuperDCAPoolV1 pool = new SuperDCAPoolV1(payable(config.gelatoOps));
+    SuperDCAPoolV1 pool = new SuperDCAPoolV1(payable(config.gelatoAutomate));
 
     // Setup initialization params
     address[] memory path = new address[](3);
@@ -81,14 +81,14 @@ abstract contract BaseDeploySuperDCAPool is Script {
       wethx: ISuperToken(config.wethx),
       inputToken: ISuperToken(config.usdcx),
       outputToken: ISuperToken(config.wethx),
-      router: ISwapRouter02(config.uniswapV3Router),
+      router: ISwapRouter(config.uniswapV3Router),
       uniswapFactory: IUniswapV3Factory(config.uniswapV3Factory),
       uniswapPath: path,
       poolFees: fees,
       priceFeed: AggregatorV3Interface(config.chainlinkEthUsdc),
       invertPrice: false,
       registrationKey: config.sfRegKey,
-      ops: payable(config.gelatoOps)
+      automate: payable(config.gelatoAutomate)
     });
 
     // Initialize the pool
