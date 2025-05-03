@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SuperDCATrade is Ownable, ERC721 {
-
   struct Trade {
     uint256 tradeId;
     uint256 startTime;

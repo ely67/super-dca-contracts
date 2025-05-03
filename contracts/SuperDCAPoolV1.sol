@@ -25,7 +25,7 @@ import "./SuperDCATrade.sol";
 import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/tokens/ISETH.sol";
 import {ModuleData, Module} from "@gelato/contracts/integrations/Types.sol";
 //import {LibDataTypes} from "@gelato/contracts/libraries/LibDataTypes.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
   using SafeERC20 for ERC20;
@@ -772,11 +772,11 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     uint256 _lastDistributedAt
   ) internal view returns (uint256 _uninvestedAmount) {
     _uninvestedAmount = _flowRate
-      * (
-        // solhint-disable-next-line not-rely-on-time
-        block.timestamp
-          - ((_prevUpdateTimestamp > _lastDistributedAt) ? _prevUpdateTimestamp : _lastDistributedAt)
-      );
+    // solhint-disable-next-line not-rely-on-time
+    * (
+      block.timestamp
+        - ((_prevUpdateTimestamp > _lastDistributedAt) ? _prevUpdateTimestamp : _lastDistributedAt)
+    );
   }
 
   // Shareholder Math Methods (TODO: Move to a library?)
@@ -943,8 +943,11 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
   function stake(uint256 amount) external {
     if (amount <= currentStake) revert StakeTooLow();
 
-    // Update executor state
+    // Store previous state before updating
     address previousExecutor = currentExecutor;
+    uint256 previousStake = currentStake;
+
+    // Update executor state
     currentExecutor = msg.sender;
     currentStake = amount;
 
@@ -952,9 +955,9 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
     ERC20(STAKING_TOKEN_ADDRESS).transferFrom(msg.sender, address(this), amount);
 
     // Return previous stake if there was one
-    if (currentExecutor != address(0)) {
-      ERC20(STAKING_TOKEN_ADDRESS).transfer(currentExecutor, currentStake);
-      emit StakeReturned(currentExecutor, currentStake);
+    if (previousExecutor != address(0)) {
+      ERC20(STAKING_TOKEN_ADDRESS).transfer(previousExecutor, previousStake);
+      emit StakeReturned(previousExecutor, previousStake);
     }
 
     emit NewExecutor(previousExecutor, currentExecutor, amount);
