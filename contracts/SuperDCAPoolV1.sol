@@ -28,6 +28,7 @@ import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 
 // Chainlink imports
 import {AggregatorV3Interface} from "@chainlink/contracts/interfaces/AggregatorV3Interface.sol";
+<<<<<<< HEAD
 
 // Gelato imports
 import {AutomateTaskCreator} from "@gelato/contracts/integrations/AutomateTaskCreator.sol";
@@ -35,10 +36,25 @@ import {ModuleData, Module} from "@gelato/contracts/integrations/Types.sol";
 
 // Local imports
 import {IWETH} from "../contracts/interface/IWETH.sol";
+=======
+import {AutomateTaskCreator} from "@gelato/contracts/integrations/AutomateTaskCreator.sol";
+import {IWETH} from "../contracts/interface/IWETH.sol";
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
 import "./SuperDCATrade.sol";
+import {ISETH} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/tokens/ISETH.sol";
+import {ModuleData, Module} from "@gelato/contracts/integrations/Types.sol";
+//import {LibDataTypes} from "@gelato/contracts/libraries/LibDataTypes.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+<<<<<<< HEAD
 // Uniswap V4 Swap mix-in
 import {SuperDCASwap} from "./SuperDCASwap.sol";
+=======
+contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator {
+  using SafeERC20 for ERC20;
+  // using Counters for Counters.Counter;
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
 
 // Staking mix-in
 import {SuperDCAPoolStaking} from "./pool/SuperDCAPoolStaking.sol";
@@ -68,6 +84,13 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
     ISuperToken wethx;
     ISuperToken inputToken;
     ISuperToken outputToken;
+<<<<<<< HEAD
+=======
+    ISwapRouter router;
+    IUniswapV3Factory uniswapFactory;
+    address[] uniswapPath;
+    uint24[] poolFees;
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
     AggregatorV3Interface priceFeed;
     bool invertPrice;
     string registrationKey;
@@ -106,6 +129,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
   uint128 public constant SHARE_SCALER = 100_000; // The scaler to apply to the share of the
     // outputToken pool
 
+<<<<<<< HEAD
   // Uniswap V4 Constants
   address constant USDC_ADDRESS = 0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85;
   address constant DCA_ADDRESS = 0xb1599CDE32181f48f89683d3C5Db5C5D2C7C93cc;
@@ -126,6 +150,14 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
     tickSpacing: 200,
     hooks: IHooks(address(0))
   });
+=======
+  // Uniswap Variables
+  ISwapRouter public router; // UniswapV3 Router
+  address[] public uniswapPath; // The path between inputToken and outputToken
+  uint24[] public poolFees; // The pool fee to use in the path between inputToken and outputToken
+  uint24 public constant GELATO_GAS_POOL_FEE = 500; // The pool fee to use for gas reimbursements to
+    // Gelato
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
 
   // Chainlink Variables
   AggregatorV3Interface public priceFeed; // Chainlink price feed for the inputToken/outputToken
@@ -198,6 +230,10 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
     _initializePriceFeed(params.priceFeed, params.invertPrice);
   }
 
+<<<<<<< HEAD
+=======
+  /// @dev Creates the distribute task on Gelato Network
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
   function _createGelatoTask() internal {
     // Create a timed interval task with Gelato Network
     bytes memory execData = abi.encodeCall(this.distribute, ("", false));
@@ -233,6 +269,61 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
     }
   }
 
+<<<<<<< HEAD
+=======
+  /// @dev Initialize the Uniswap V3 Router and Factory and do approvals
+  /// @param _uniswapRouter is the Uniswap V3 Router
+  /// @param _uniswapFactory is the Uniswap V3 Factory
+  /// @param _uniswapPath is the Uniswap V3 path
+  /// @param _poolFees is the Uniswap V3 pool fees
+  function _initializeUniswap(
+    ISwapRouter _uniswapRouter,
+    IUniswapV3Factory _uniswapFactory,
+    address[] memory _uniswapPath,
+    uint24[] memory _poolFees
+  ) internal {
+    // Set contract variables
+    router = _uniswapRouter;
+    poolFees = _poolFees;
+    uniswapPath = _uniswapPath;
+
+    // Get the pool from the Uniswap V3 Factory
+    IUniswapV3Factory factory = IUniswapV3Factory(_uniswapFactory);
+
+    // Require that the pool for input/output swaps exists
+    for (uint256 i = 0; i < uniswapPath.length - 1; i++) {
+      if (
+        factory.getPool(address(uniswapPath[i]), address(uniswapPath[i + 1]), poolFees[i])
+          == address(0)
+      ) revert PoolDoesNotExist();
+    }
+
+    // Precompute the encoded swap path
+    for (uint256 i = 0; i < uniswapPath.length; i++) {
+      if (i == uniswapPath.length - 1) {
+        encodedSwapPath = abi.encodePacked(encodedSwapPath, uniswapPath[i]);
+      } else {
+        encodedSwapPath = abi.encodePacked(encodedSwapPath, uniswapPath[i], poolFees[i]);
+      }
+    }
+    // Pre-compute the gas path
+    encodedGasPath = abi.encodePacked(address(weth), GELATO_GAS_POOL_FEE, underlyingInputToken);
+
+    // Require that the pool for gas reimbursements exists
+    if (address(underlyingInputToken) != address(weth)) {
+      if (
+        factory.getPool(address(weth), address(underlyingInputToken), GELATO_GAS_POOL_FEE)
+          == address(0)
+      ) revert PoolDoesNotExist();
+    }
+
+    // Approve Uniswap Router to spend
+    ERC20(underlyingInputToken).safeIncreaseAllowance(address(router), 2 ** 256 - 1);
+  }
+
+  /// @dev Initialize the Chainlink Aggregator
+  /// @param _priceFeed is the Chainlink Aggregator
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
   function _initializePriceFeed(AggregatorV3Interface _priceFeed, bool _invertPrice) internal {
     priceFeed = _priceFeed;
     invertPrice = _invertPrice;
@@ -340,6 +431,7 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
     address inputAddr = address(underlyingInputToken);
     address outputAddr = address(underlyingOutputToken);
 
+<<<<<<< HEAD
     // Check if we're dealing with native ETH (represented as address(0) in Currency)
     bool inputIsETH = inputAddr == address(weth);
     bool outputIsETH = outputAddr == address(weth);
@@ -354,6 +446,15 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
       tickSpacing: DCA_USDC_KEY.tickSpacing,
       hooks: DCA_USDC_KEY.hooks,
       hookData: bytes("")
+=======
+    ISwapRouter.ExactOutputParams memory params = ISwapRouter.ExactOutputParams({
+      path: encodedGasPath,
+      recipient: address(this),
+      // solhint-disable-next-line not-rely-on-time
+      deadline: block.timestamp + 300,
+      amountOut: amountOut,
+      amountInMaximum: amountInMaximum
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
     });
 
     // Step 2: DCA -> outputToken
@@ -378,7 +479,38 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
     return _swapExactInput(currencyIn, path, amountIn, minAmountOut);
   }
 
+<<<<<<< HEAD
   function _handleTokenUpgrade() internal {
+=======
+  // @notice Swap input token for output token
+  // @param amount Amount of inputToken to swap
+  // @return outAmount Amount of outputToken received
+  // @dev This function has grown to do far more than just swap, this needs to be refactored
+  function _swap(uint256 amount) internal returns (uint256 outAmount, uint256 latestPrice) {
+    // Calculate the amount of tokens, equal to the balance minus the execution fee
+    amount = ERC20(underlyingInputToken).balanceOf(address(this));
+    amount = (amount * (EXEC_FEE_SCALER - gelatoFeeShare)) / EXEC_FEE_SCALER;
+
+    // Record the latest price from the oracle for easy performance tracking
+    latestPrice = uint256(int256(getLatestPrice()));
+
+    // This is the code for the uniswap
+    ISwapRouter.ExactInputParams memory params = ISwapRouter.ExactInputParams({
+      path: encodedSwapPath,
+      recipient: address(this),
+      // solhint-disable-next-line not-rely-on-time
+      deadline: block.timestamp + 300,
+      amountIn: amount,
+      // Disabled on this version since initial liquidity for SuperDCA liquidity Network is low
+      // SuperDCA Swaps are very small by design, its unlikely frontrunning these swaps will be
+      // worth it
+      amountOutMinimum: 0
+    });
+    outAmount = router.exactInput(params);
+
+    // Upgrade if this is not a supertoken
+    // TODO: This should be its own method
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
     if (underlyingOutputToken != address(outputToken)) {
       if (outputToken == wethx) {
         weth.withdraw(ERC20(underlyingOutputToken).balanceOf(address(this)));
@@ -668,7 +800,30 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
     if (msg.sender != address(host)) revert InvalidHost();
   }
 
+<<<<<<< HEAD
   // --- Shareholder & Fee Logic ---
+=======
+  /// @dev Calculate the uninvested amount for the user based on the flow rate and last update time
+  /// @param _prevUpdateTimestamp is the previous update timestamp
+  /// @param _flowRate is the flow rate
+  /// @param _lastDistributedAt is the last distributed timestamp
+  /// @return _uninvestedAmount is the uninvested amount
+  function _calcUserUninvested(
+    uint256 _prevUpdateTimestamp,
+    uint256 _flowRate,
+    uint256 _lastDistributedAt
+  ) internal view returns (uint256 _uninvestedAmount) {
+    _uninvestedAmount = _flowRate
+      * (
+        // solhint-disable-next-line not-rely-on-time
+        block.timestamp
+          - ((_prevUpdateTimestamp > _lastDistributedAt) ? _prevUpdateTimestamp : _lastDistributedAt)
+      );
+  }
+
+  // Shareholder Math Methods (TODO: Move to a library?)
+
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
   function _updateShareholder(bytes memory _ctx, ShareholderUpdate memory _shareholderUpdate)
     internal
     returns (bytes memory _newCtx)
@@ -809,6 +964,98 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
     );
   }
 
+<<<<<<< HEAD
   // --- Fallback Function ---
   receive() external payable override {}
+=======
+  function getTradeInfo(address _trader, uint256 _tradeIndex)
+    public
+    view
+    returns (SuperDCATrade.Trade memory trade)
+  {
+    trade = dcaTrade.getTradeInfo(_trader, _tradeIndex);
+  }
+
+  function getLatestTrade(address _trader) public view returns (SuperDCATrade.Trade memory trade) {
+    if (dcaTrade.tradeCountsByUser(_trader) > 0) trade = dcaTrade.getLatestTrade(_trader);
+    else trade = SuperDCATrade.Trade(0, 0, 0, 0, 0, 0, 0, 0);
+  }
+
+  function getTradeCount(address _trader) public view returns (uint256 count) {
+    count = dcaTrade.tradeCountsByUser(_trader);
+  }
+
+  receive() external payable {}
+
+  /// @notice Get the execution fee share based on the current fee share and the time since last
+  /// distribution
+  /// @dev Retargeting higher uses exponential binary backoff, retargeting lower uses simple
+  /// division
+  /// @param _currentFeeShare The current fee share
+  /// @return _adjustedFeeShare The adjusted fee share
+  function getExecutionFeeShare(uint256 _currentFeeShare)
+    public
+    view
+    returns (uint256 _adjustedFeeShare)
+  {
+    // solhint-disable-next-line not-rely-on-time
+    uint256 _timeSinceLastDistribution = block.timestamp - lastDistributedAt;
+
+    if (_timeSinceLastDistribution > distributionInterval) {
+      uint256 _hoursPastInterval = (_timeSinceLastDistribution - distributionInterval) / 1 hours;
+      _hoursPastInterval =
+        _hoursPastInterval > MAX_HOURS_PAST_INTERVAL ? MAX_HOURS_PAST_INTERVAL : _hoursPastInterval;
+
+      if (_hoursPastInterval == 0) return _currentFeeShare;
+
+      _adjustedFeeShare = _currentFeeShare * (GROWTH_FACTOR ** _hoursPastInterval);
+
+      if (_adjustedFeeShare > MAX_FEE_SHARE) return MAX_FEE_SHARE;
+
+      return _adjustedFeeShare;
+    } else {
+      _adjustedFeeShare = _currentFeeShare / GROWTH_FACTOR;
+
+      if (_adjustedFeeShare < MIN_FEE_SHARE) return MIN_FEE_SHARE;
+      return _adjustedFeeShare;
+    }
+  }
+
+  /// @notice Stake tokens to become the executor
+  /// @dev Must stake more than current stake to become executor
+  /// @param amount Amount of tokens to stake
+  function stake(uint256 amount) external {
+    if (amount <= currentStake) revert StakeTooLow();
+
+    // Update executor state
+    address previousExecutor = currentExecutor;
+    currentExecutor = msg.sender;
+    currentStake = amount;
+
+    // Transfer new stake from caller
+    ERC20(STAKING_TOKEN_ADDRESS).transferFrom(msg.sender, address(this), amount);
+
+    // Return previous stake if there was one
+    if (currentExecutor != address(0)) {
+      ERC20(STAKING_TOKEN_ADDRESS).transfer(currentExecutor, currentStake);
+      emit StakeReturned(currentExecutor, currentStake);
+    }
+
+    emit NewExecutor(previousExecutor, currentExecutor, amount);
+  }
+
+  /// @notice Withdraw stake if no longer executor
+  /// @dev Only callable by previous executor if outbid
+  function unstake() external {
+    if (msg.sender != currentExecutor) revert NotCurrentExecutor();
+
+    uint256 stakeAmount = currentStake;
+    currentStake = 0;
+    currentExecutor = address(0);
+    emit NewExecutor(currentExecutor, address(0), 0);
+
+    ERC20(STAKING_TOKEN_ADDRESS).transfer(msg.sender, stakeAmount);
+    emit StakeReturned(msg.sender, stakeAmount);
+  }
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
 }

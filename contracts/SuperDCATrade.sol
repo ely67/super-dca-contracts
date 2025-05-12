@@ -6,6 +6,10 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SuperDCATrade is Ownable, ERC721 {
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
   struct Trade {
     uint256 tradeId;
     uint256 startTime;
@@ -68,7 +72,11 @@ contract SuperDCATrade is Ownable, ERC721 {
   }
 
   function getLatestTrade(address _trader) external view returns (Trade memory trade) {
+<<<<<<< HEAD
     require(tradesByUser[_trader].length > 0, "No trades");
+=======
+    require(tradesByUser[_trader].length - 1 > 0, "No trades");
+>>>>>>> 8699383 (Fix issues #6 and #18; refactor imports and improve linter compliance)
     trade = trades[tradesByUser[_trader][tradesByUser[_trader].length - 1]];
   }
 
