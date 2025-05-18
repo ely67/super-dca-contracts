@@ -24,7 +24,6 @@ import {IInstantDistributionAgreementV1} from
 import {Automate} from "@gelato/contracts/Automate.sol";
 import {LibDataTypes} from "@gelato/contracts/libraries/LibDataTypes.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract SuperDCAPoolV1Test is Test {
   // Constants from optimism network
@@ -921,7 +920,6 @@ contract SuperDCAPoolV1Test is Test {
 
     // Record alice's initial balance
     uint256 aliceInitialBalance = alice.balance;
-    console.log("aliceInitialBalance:", aliceInitialBalance);
 
     // Skip time and distribute
     skip(1 days);
