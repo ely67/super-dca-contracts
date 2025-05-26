@@ -87,8 +87,6 @@ contract SuperDCAPoolV1Test is Test {
   }
 
   function setUp() public {
-    string memory optimismRpc = vm.rpcUrl("optimism");
-    require(bytes(optimismRpc).length > 0, "Missing RPC URL for optimism");
     vm.createSelectFork(vm.rpcUrl("optimism"), FORK_BLOCK_NUMBER);
 
     vm.startPrank(AUTHORIZED_DEPLOYER, AUTHORIZED_DEPLOYER);
