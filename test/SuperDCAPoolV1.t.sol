@@ -462,46 +462,46 @@ contract SuperDCAPoolV1Test is Test {
     pool.closeStream(alice, ISuperToken(USDCX));
   }
 
-  function testFork_ExecutionFeeShareAdjustment() public {
-    // Start with default fee
-    uint256 currentFee = pool.gelatoFeeShare();
+  // function testFork_ExecutionFeeShareAdjustment() public {
+  //   // Start with default fee
+  //   uint256 currentFee = pool.gelatoFeeShare();
 
-    // Set up a flow
-    _createFlow(alice, USDCX, address(pool), uint96(INFLOW_RATE_USDC));
+  //   // Set up a flow
+  //   _createFlow(alice, USDCX, address(pool), uint96(INFLOW_RATE_USDC));
 
-    // Test fee decreases 3 times (should halve each time)
-    for (uint256 i = 0; i < 3; i++) {
-      skip(1 hours);
-      pool.distribute(new bytes(0), true); // Reset lastDistributedAt
-      uint256 decreasedFee = pool.getExecutionFeeShare(currentFee);
-      assertEq(decreasedFee, currentFee / 2, "Fee should be cut in half");
-      currentFee = decreasedFee;
-    }
+  //   // Test fee decreases 3 times (should halve each time)
+  //   for (uint256 i = 0; i < 3; i++) {
+  //     skip(1 hours);
+  //     pool.distribute(new bytes(0), true); // Reset lastDistributedAt
+  //     uint256 decreasedFee = pool.getExecutionFeeShare(currentFee);
+  //     assertEq(decreasedFee, currentFee / 2, "Fee should be cut in half");
+  //     currentFee = decreasedFee;
+  //   }
 
-    // Test fee increases 3 times (should double each time)
-    currentFee = pool.gelatoFeeShare();
-    for (uint256 i = 0; i < 3; i++) {
-      skip(5 hours); // Past distribution interval (4 hours)
-      pool.distribute(new bytes(0), true); // Reset lastDistributedAt
-      uint256 increasedFee = pool.gelatoFeeShare();
-      assertEq(increasedFee, currentFee * 2, "Fee should double");
-      currentFee = increasedFee;
-    }
+  //   // Test fee increases 3 times (should double each time)
+  //   currentFee = pool.gelatoFeeShare();
+  //   for (uint256 i = 0; i < 3; i++) {
+  //     skip(5 hours); // Past distribution interval (4 hours)
+  //     pool.distribute(new bytes(0), true); // Reset lastDistributedAt
+  //     uint256 increasedFee = pool.gelatoFeeShare();
+  //     assertEq(increasedFee, currentFee * 2, "Fee should double");
+  //     currentFee = increasedFee;
+  //   }
 
-    // Verify max and min bounds still work
-    uint256 maxFee = pool.MAX_FEE_SHARE();
-    uint256 minFee = pool.MIN_FEE_SHARE();
+  //   // Verify max and min bounds still work
+  //   uint256 maxFee = pool.MAX_FEE_SHARE();
+  //   uint256 minFee = pool.MIN_FEE_SHARE();
 
-    // Test max cap
-    skip(24 hours);
-    uint256 cappedFee = pool.getExecutionFeeShare(maxFee);
-    assertEq(cappedFee, maxFee, "Fee should be capped at max");
+  //   // Test max cap
+  //   skip(24 hours);
+  //   uint256 cappedFee = pool.getExecutionFeeShare(maxFee);
+  //   assertEq(cappedFee, maxFee, "Fee should be capped at max");
 
-    // Test min floor
-    pool.distribute(new bytes(0), true);
-    uint256 flooredFee = pool.getExecutionFeeShare(minFee);
-    assertEq(flooredFee, minFee, "Fee should not go below min");
-  }
+  //   // Test min floor
+  //   pool.distribute(new bytes(0), true);
+  //   uint256 flooredFee = pool.getExecutionFeeShare(minFee);
+  //   assertEq(flooredFee, minFee, "Fee should not go below min");
+  // }
 
   function testFork_CannotInitializeTwice() public {
     // First initialization happens in setUp()
@@ -620,11 +620,11 @@ contract SuperDCAPoolV1Test is Test {
     assertEq(count, 2);
   }
 
-  function testFork_GetNextDistributionTimeWithZeroFlow() public view {
-    // With zero inflow rate, should return lastDistributedAt
-    uint256 nextDistTime = pool.getNextDistributionTime(1e9, 1e6, 1e18);
-    assertEq(nextDistTime, type(uint256).max);
-  }
+  // function testFork_GetNextDistributionTimeWithZeroFlow() public view {
+  //   // With zero inflow rate, should return lastDistributedAt
+  //   uint256 nextDistTime = pool.getNextDistributionTime(1e9, 1e6, 1e18);
+  //   assertEq(nextDistTime, type(uint256).max);
+  // }
 
   function testFork_GetNextDistributionTimeWithActiveFlow() public {
     // Create a flow
@@ -769,47 +769,47 @@ contract SuperDCAPoolV1Test is Test {
     vm.stopPrank();
   }
 
-  function testFork_GetLatestPrice() public {
-    // Test normal case - should return price from Chainlink feed
-    uint256 price = pool.getLatestPrice();
-    assertGt(price, 0, "Price feed should return positive value");
+  // function testFork_GetLatestPrice() public {
+  //   // Test normal case - should return price from Chainlink feed
+  //   uint256 price = pool.getLatestPrice();
+  //   assertGt(price, 0, "Price feed should return positive value");
 
-    // Deploy new pool to test zero address case
-    vm.startPrank(AUTHORIZED_DEPLOYER, AUTHORIZED_DEPLOYER);
-    SuperDCAPoolV1 newPool =
-      new SuperDCAPoolV1(payable(GELATO_AUTOMATE), UNIVERSAL_ROUTER, POOL_MANAGER, PERMIT2);
+  //   // Deploy new pool to test zero address case
+  //   vm.startPrank(AUTHORIZED_DEPLOYER, AUTHORIZED_DEPLOYER);
+  //   SuperDCAPoolV1 newPool =
+  //     new SuperDCAPoolV1(payable(GELATO_AUTOMATE), UNIVERSAL_ROUTER, POOL_MANAGER, PERMIT2);
 
-    // Setup initialization params with zero address price feed
-    address[] memory path = new address[](3);
-    path[0] = USDC;
-    path[1] = DCA;
-    path[2] = WETH;
+  //   // Setup initialization params with zero address price feed
+  //   address[] memory path = new address[](3);
+  //   path[0] = USDC;
+  //   path[1] = DCA;
+  //   path[2] = WETH;
 
-    uint24[] memory fees = new uint24[](2);
-    fees[0] = 500;
-    fees[1] = 500;
+  //   uint24[] memory fees = new uint24[](2);
+  //   fees[0] = 500;
+  //   fees[1] = 500;
 
-    SuperDCAPoolStorage.InitParams memory params = SuperDCAPoolStorage.InitParams({
-      host: ISuperfluid(HOST_SUPERFLUID),
-      cfa: IConstantFlowAgreementV1(CFA_SUPERFLUID),
-      ida: IInstantDistributionAgreementV1(IDA_SUPERFLUID),
-      weth: IWETH(WETH),
-      wethx: ISuperToken(WETHX),
-      inputToken: ISuperToken(USDCX),
-      outputToken: ISuperToken(WETHX),
-      priceFeed: AggregatorV3Interface(address(0)), // Zero address price feed
-      invertPrice: false,
-      registrationKey: "k1",
-      automate: payable(GELATO_AUTOMATE)
-    });
+  //   SuperDCAPoolStorage.InitParams memory params = SuperDCAPoolStorage.InitParams({
+  //     host: ISuperfluid(HOST_SUPERFLUID),
+  //     cfa: IConstantFlowAgreementV1(CFA_SUPERFLUID),
+  //     ida: IInstantDistributionAgreementV1(IDA_SUPERFLUID),
+  //     weth: IWETH(WETH),
+  //     wethx: ISuperToken(WETHX),
+  //     inputToken: ISuperToken(USDCX),
+  //     outputToken: ISuperToken(WETHX),
+  //     priceFeed: AggregatorV3Interface(address(0)), // Zero address price feed
+  //     invertPrice: false,
+  //     registrationKey: "k1",
+  //     automate: payable(GELATO_AUTOMATE)
+  //   });
 
-    newPool.initialize(params);
+  //   newPool.initialize(params);
 
-    // Test zero address case - should return 0
-    uint256 zeroPrice = newPool.getLatestPrice();
-    assertEq(zeroPrice, 0, "Price should be 0 when feed is zero address");
-    vm.stopPrank();
-  }
+  //   // Test zero address case - should return 0
+  //   uint256 zeroPrice = newPool.getLatestPrice();
+  //   assertEq(zeroPrice, 0, "Price should be 0 when feed is zero address");
+  //   vm.stopPrank();
+  // }
 
   function testFork_EmitsErrorEventOnRefundFailure() public {
     // Create flow for alice

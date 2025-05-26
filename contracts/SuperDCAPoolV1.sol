@@ -16,9 +16,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // Uniswap imports
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 
-// Chainlink imports
-import {AggregatorV3Interface} from "@chainlink/contracts/interfaces/AggregatorV3Interface.sol";
-
 // Gelato imports
 import {AutomateTaskCreator} from "@gelato/contracts/integrations/AutomateTaskCreator.sol";
 import {ModuleData, Module} from "@gelato/contracts/integrations/Types.sol";

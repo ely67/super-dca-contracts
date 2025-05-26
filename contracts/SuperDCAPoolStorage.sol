@@ -144,11 +144,13 @@ contract SuperDCAPoolStorage {
 
 
   function _isCFAv1(address _agreementClass) internal view returns (bool) {
+    if (_agreementClass == address(0)) return false;
     return ISuperAgreement(_agreementClass).agreementType()
       == keccak256("org.superfluid-finance.agreements.ConstantFlowAgreement.v1");
   }
   
   function _isIDAv1(address _agreementClass) internal view returns (bool) {
+    if (_agreementClass == address(0)) return false;
     return ISuperAgreement(_agreementClass).agreementType()
       == keccak256("org.superfluid-finance.agreements.InstantDistributionAgreement.v1");
   }
