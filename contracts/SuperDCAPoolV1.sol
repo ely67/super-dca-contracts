@@ -268,6 +268,48 @@ contract SuperDCAPoolV1 is SuperAppBase, AutomateTaskCreator, SuperDCAPoolStakin
 
   
    // --- Superfluid App Callbacks ---
+  
+  function beforeAgreementCreated(
+    ISuperToken _superToken,
+    address _agreementClass,
+    bytes32, //_agreementId,
+    bytes calldata, // _agreementData,
+    bytes calldata _ctx
+  ) external view virtual override returns (bytes memory _cbdata) {
+    _onlyHost();
+
+    // Make sure the agreement is either:
+    // - inputToken and CFAv1
+    // - outputToken and IDAv1
+    if (
+      !(_isInputToken(_superToken) && _isCFAv1(_agreementClass))
+        && !(_isOutputToken(_superToken) && _isIDAv1(_agreementClass))
+    ) revert InvalidToken();
+
+    // If this isn't a CFA Agreement class, return the context and be done
+    if (!_isCFAv1(_agreementClass)) return _ctx;
+  }
+
+  function beforeAgreementUpdated(
+    ISuperToken _superToken,
+    address _agreementClass,
+    bytes32, //_agreementId,
+    bytes calldata _agreementData,
+    bytes calldata _ctx
+  ) external view virtual override returns (bytes memory _cbdata) {
+    // Only allow the Superfluid host to call this function
+    _onlyHost();
+
+    // If the agreement is not a CFAv1 agreement, then return the context
+    if (!_isInputToken(_superToken) || !_isCFAv1(_agreementClass)) return _ctx;
+
+    // Get the stakeholders current flow rate and save it in cbData
+    (, int96 _flowRate,) = _getShareholderInfo(_agreementData, _superToken);
+
+    // Encode the rate for use in afterAgreementUpdated
+    _cbdata = abi.encode(_flowRate);
+  }
+
   function afterAgreementCreated(
     ISuperToken _superToken,
     address _agreementClass,
