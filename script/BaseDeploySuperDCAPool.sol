@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Script.sol";
 import "../contracts/SuperDCAPoolV1.sol";
 import "../contracts/SuperDCATrade.sol";
+import "../contracts/SuperDCAPoolStorage.sol";
 import {
   ISuperfluid,
   IConstantFlowAgreementV1,
@@ -65,7 +66,7 @@ abstract contract BaseDeploySuperDCAPool is Script {
       payable(config.gelatoAutomate), config.universalRouter, config.poolManager, config.permit2
     );
 
-    SuperDCAPoolV1.InitParams memory params = SuperDCAPoolV1.InitParams({
+    SuperDCAPoolStorage.InitParams memory params = SuperDCAPoolStorage.InitParams({
       host: ISuperfluid(config.hostSuperfluid),
       cfa: IConstantFlowAgreementV1(config.cfaSuperfluid),
       ida: IInstantDistributionAgreementV1(config.idaSuperfluid),

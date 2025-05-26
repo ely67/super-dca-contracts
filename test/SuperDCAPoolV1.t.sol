@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {SuperDCAPoolV1} from "../contracts/SuperDCAPoolV1.sol";
 import {SuperDCATrade} from "../contracts/SuperDCATrade.sol";
+import {SuperDCAPoolStorage} from "../contracts/SuperDCAPoolStorage.sol";
 import {SuperDCAPoolStaking} from "../contracts/pool/SuperDCAPoolStaking.sol";
 import {ICFAForwarder} from "./interfaces/ICFAForwarder.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/interfaces/AggregatorV3Interface.sol";
@@ -92,7 +93,7 @@ contract SuperDCAPoolV1Test is Test {
     vm.startPrank(AUTHORIZED_DEPLOYER, AUTHORIZED_DEPLOYER);
     pool = new SuperDCAPoolV1(payable(GELATO_AUTOMATE), UNIVERSAL_ROUTER, POOL_MANAGER, PERMIT2);
 
-    SuperDCAPoolV1.InitParams memory params = SuperDCAPoolV1.InitParams({
+    SuperDCAPoolStorage.InitParams memory params = SuperDCAPoolStorage.InitParams({
       host: ISuperfluid(HOST_SUPERFLUID),
       cfa: IConstantFlowAgreementV1(CFA_SUPERFLUID),
       ida: IInstantDistributionAgreementV1(IDA_SUPERFLUID),
@@ -457,7 +458,7 @@ contract SuperDCAPoolV1Test is Test {
     _createFlow(alice, USDCX, address(pool), uint96(INFLOW_RATE_USDC));
 
     // Should revert when trying to close stream with sufficient balance
-    vm.expectRevert(SuperDCAPoolV1.NotClosable.selector);
+    vm.expectRevert(SuperDCAPoolStorage.NotClosable.selector);
     pool.closeStream(alice, ISuperToken(USDCX));
   }
 
@@ -505,7 +506,7 @@ contract SuperDCAPoolV1Test is Test {
   function testFork_CannotInitializeTwice() public {
     // First initialization happens in setUp()
 
-    SuperDCAPoolV1.InitParams memory params = SuperDCAPoolV1.InitParams({
+    SuperDCAPoolStorage.InitParams memory params = SuperDCAPoolStorage.InitParams({
       host: ISuperfluid(HOST_SUPERFLUID),
       cfa: IConstantFlowAgreementV1(CFA_SUPERFLUID),
       ida: IInstantDistributionAgreementV1(IDA_SUPERFLUID),
@@ -520,7 +521,7 @@ contract SuperDCAPoolV1Test is Test {
     });
 
     // Attempt to initialize again should revert
-    vm.expectRevert(SuperDCAPoolV1.AlreadyInitialized.selector);
+    vm.expectRevert(SuperDCAPoolStorage.AlreadyInitialized.selector);
     pool.initialize(params);
   }
 
@@ -530,7 +531,7 @@ contract SuperDCAPoolV1Test is Test {
     SuperDCAPoolV1 newPool =
       new SuperDCAPoolV1(payable(GELATO_AUTOMATE), UNIVERSAL_ROUTER, POOL_MANAGER, PERMIT2);
 
-    SuperDCAPoolV1.InitParams memory params = SuperDCAPoolV1.InitParams({
+    SuperDCAPoolStorage.InitParams memory params = SuperDCAPoolStorage.InitParams({
       host: ISuperfluid(HOST_SUPERFLUID),
       cfa: IConstantFlowAgreementV1(CFA_SUPERFLUID),
       ida: IInstantDistributionAgreementV1(IDA_SUPERFLUID),
@@ -661,7 +662,7 @@ contract SuperDCAPoolV1Test is Test {
 
     // Test invalid: input token with IDA (should revert)
     vm.startPrank(HOST_SUPERFLUID);
-    vm.expectRevert(SuperDCAPoolV1.InvalidToken.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidToken.selector);
     pool.beforeAgreementCreated(
       ISuperToken(USDCX), IDA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0)
     );
@@ -669,14 +670,14 @@ contract SuperDCAPoolV1Test is Test {
 
     // Test invalid: output token with CFA (should revert)
     vm.startPrank(HOST_SUPERFLUID);
-    vm.expectRevert(SuperDCAPoolV1.InvalidToken.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidToken.selector);
     pool.beforeAgreementCreated(
       ISuperToken(WETHX), CFA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0)
     );
     vm.stopPrank();
 
     // Test invalid: non-host caller (should revert)
-    vm.expectRevert(SuperDCAPoolV1.InvalidHost.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidHost.selector);
     pool.beforeAgreementCreated(
       ISuperToken(USDCX), CFA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0)
     );
@@ -719,37 +720,37 @@ contract SuperDCAPoolV1Test is Test {
 
   function testFork_OnlyHostModifier() public {
     // Try to call beforeAgreementCreated directly (not as host)
-    vm.expectRevert(SuperDCAPoolV1.InvalidHost.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidHost.selector);
     pool.beforeAgreementCreated(
       ISuperToken(USDCX), CFA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0)
     );
 
     // Try to call afterAgreementCreated directly (not as host)
-    vm.expectRevert(SuperDCAPoolV1.InvalidHost.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidHost.selector);
     pool.afterAgreementCreated(
       ISuperToken(USDCX), CFA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0), new bytes(0)
     );
 
     // Try to call beforeAgreementUpdated directly (not as host)
-    vm.expectRevert(SuperDCAPoolV1.InvalidHost.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidHost.selector);
     pool.beforeAgreementUpdated(
       ISuperToken(USDCX), CFA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0)
     );
 
     // Try to call afterAgreementUpdated directly (not as host)
-    vm.expectRevert(SuperDCAPoolV1.InvalidHost.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidHost.selector);
     pool.afterAgreementUpdated(
       ISuperToken(USDCX), CFA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0), new bytes(0)
     );
 
     // Try to call beforeAgreementTerminated directly (not as host)
-    vm.expectRevert(SuperDCAPoolV1.InvalidHost.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidHost.selector);
     pool.beforeAgreementTerminated(
       ISuperToken(USDCX), CFA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0)
     );
 
     // Try to call afterAgreementTerminated directly (not as host)
-    vm.expectRevert(SuperDCAPoolV1.InvalidHost.selector);
+    vm.expectRevert(SuperDCAPoolStorage.InvalidHost.selector);
     pool.afterAgreementTerminated(
       ISuperToken(USDCX), CFA_SUPERFLUID, bytes32(0), new bytes(0), new bytes(0), new bytes(0)
     );
@@ -788,7 +789,7 @@ contract SuperDCAPoolV1Test is Test {
     fees[0] = 500;
     fees[1] = 500;
 
-    SuperDCAPoolV1.InitParams memory params = SuperDCAPoolV1.InitParams({
+    SuperDCAPoolStorage.InitParams memory params = SuperDCAPoolStorage.InitParams({
       host: ISuperfluid(HOST_SUPERFLUID),
       cfa: IConstantFlowAgreementV1(CFA_SUPERFLUID),
       ida: IInstantDistributionAgreementV1(IDA_SUPERFLUID),
@@ -824,7 +825,7 @@ contract SuperDCAPoolV1Test is Test {
 
     // Watch for the error event emission
     vm.expectEmit(true, true, true, true);
-    emit SuperDCAPoolV1.ErrorRefundingUninvestedAmount(alice, INFLOW_RATE_USDC * 1 hours);
+    emit SuperDCAPoolStorage.ErrorRefundingUninvestedAmount(alice, INFLOW_RATE_USDC * 1 hours);
 
     // Close the stream which should trigger the refund attempt
     _deleteFlow(alice);
@@ -842,7 +843,7 @@ contract SuperDCAPoolV1Test is Test {
 
     // Watch for the refund event emission
     vm.expectEmit(true, true, true, true);
-    emit SuperDCAPoolV1.RefundedUninvestedAmount(alice, INFLOW_RATE_USDC * 1 hours);
+    emit SuperDCAPoolStorage.RefundedUninvestedAmount(alice, INFLOW_RATE_USDC * 1 hours);
 
     // Close the stream which should trigger the refund
     _deleteFlow(alice);
